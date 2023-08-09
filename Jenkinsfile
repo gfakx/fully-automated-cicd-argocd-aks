@@ -38,32 +38,32 @@ pipeline {
 
         // Install Argo CD on the newly created AKS cluster
         stage('Install and Configure Argo CD') {
-    steps {
-        script {
-            // Install Argo CD
-            sh "kubectl create namespace argocd"
-            sh "kubectl apply -n argocd -f https://raw.githubusercontent.com/argoproj/argo-cd/stable/manifests/install.yaml"
+            steps {
+               script {
+                 // Install Argo CD
+                  sh "kubectl create namespace argocd"
+                  sh "kubectl apply -n argocd -f https://raw.githubusercontent.com/argoproj/argo-cd/stable/manifests/install.yaml"
 
-            // Download Argo CD CLI
-            sh "curl -sSL -o argocd-linux-amd64 https://github.com/argoproj/argo-cd/releases/latest/download/argocd-linux-amd64"
-            sh "sudo install -m 555 argocd-linux-amd64 /usr/local/bin/argocd"
+                 // Download Argo CD CLI
+                  sh "curl -sSL -o argocd-linux-amd64 https://github.com/argoproj/argo-cd/releases/latest/download/argocd-linux-amd64"
+                  sh "sudo install -m 555 argocd-linux-amd64 /usr/local/bin/argocd"
 
-            // Expose API server
-            sh "kubectl patch svc argocd-server -n argocd -p '{\"spec\": {\"type\": \"LoadBalancer\"}}'"
+                  // Expose API server
+                  sh "kubectl patch svc argocd-server -n argocd -p '{\"spec\": {\"type\": \"LoadBalancer\"}}'"
 
-            // Retrieve initial password
-            def initialPassword = sh(script: "argocd admin initial-password -n argocd", returnStdout: true).trim()
+                   // Retrieve initial password
+                   def initialPassword = sh(script: "argocd admin initial-password -n argocd", returnStdout: true).trim()
 
-            // Change password (replace NEW_PASSWORD with a secure value)
-            sh "argocd account update-password --current-password ${initialPassword} --new-password NEW_PASSWORD"
+                   // Change password (replace NEW_PASSWORD with a secure value)
+                   sh "argocd account update-password --current-password ${initialPassword} --new-password NEW_PASSWORD"
 
-            // Set the current namespace to argocd
-            sh "kubectl config set-context --current --namespace=argocd"
+                   // Set the current namespace to argocd
+                  sh "kubectl config set-context --current --namespace=argocd"
+               }
+            }
         }
-    }
-}
 
-    // Get Argo CD Server URL
+                    // Get Argo CD Server URL
         stage('Get Argo CD Server URL') {
             steps {
                 script {
@@ -98,21 +98,22 @@ pipeline {
 
         // Apply the Argo CD Application manifest to deploy the application
         stage('Deploy with Argo CD') {
-    steps {
-        script {
-             sh "sed -i 's/name: amazon-app/name: ${params.APP_NAME}/g' argocd-app.yml" // Update app name
-            withCredentials([string(credentialsId: 'argocd-admin-password', variable: 'ARGOCD_PASSWORD')]) {
-            // Login to Argo CD
-            sh "argocd login ${env.ARGOCD_SERVER_URL} --username admin --password NEW_PASSWORD" // Replace with actual server URL
+             steps {
+                script {
+                    sh "sed -i 's/name: amazon-app/name: ${params.APP_NAME}/g' argocd-app.yml" // Update app name
+                     withCredentials([string(credentialsId: 'argocd-admin-password', variable: 'ARGOCD_PASSWORD')]) {
+                     // Login to Argo CD
+                      sh "argocd login ${env.ARGOCD_SERVER_URL} --username admin --password NEW_PASSWORD" // Replace with actual server URL
 
-            // Apply the Argo CD Application manifest
-            sh "argocd app create -f argocd-app.yml"
+                      // Apply the Argo CD Application manifest
+                       sh "argocd app create -f argocd-app.yml"
 
-            // Optional: Sync the application if needed
-            sh "argocd app sync ${params.APP_NAME}"
+                        // Optional: Sync the application if needed
+                         sh "argocd app sync ${params.APP_NAME}"
+                }
+             }
+            }
         }
-        }
-    }
 
     stage('Cleanup Resources') {
           when {
