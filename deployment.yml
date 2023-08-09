@@ -1,0 +1,56 @@
+# Deployment
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: amazon-deployment
+  namespace: default
+  labels:
+    app: amazon-app
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: amazon-app
+      tier: frontend
+  template:
+    metadata:
+      labels:
+        app: amazon-app
+        tier: frontend
+    spec:
+      containers:
+      - name: amazon-container
+        image: gfakx/gf-amazon-app:2 # Image from repo1
+        ports:
+        - containerPort: 3000
+        resources: # Define resources limits and requests
+          requests:
+            cpu: "250m"
+            memory: "64Mi"
+          limits:
+            cpu: "500m"
+            memory: "128Mi"
+        livenessProbe: # Health check
+          httpGet:
+            path: /health
+            port: 3000
+        readinessProbe: # Readiness check
+          httpGet:
+            path: /ready
+            port: 3000
+
+# Service
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: amazon-service
+  labels:
+    app: amazon-app
+spec:
+  ports:
+  - port: 80
+    targetPort: 3000
+  selector:
+    app: amazon-app
+  type: LoadBalancer # Expose service externally

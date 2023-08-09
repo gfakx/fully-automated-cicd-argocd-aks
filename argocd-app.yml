@@ -1,0 +1,25 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: amazon-app
+  namespace: argocd
+spec:
+  project: default
+  source:
+    repoURL: 'https://github.com/your-user/repo2.git' # URL of your Git repository
+    path: '.' # Path to the directory containing your manifests
+    targetRevision: HEAD # Branch, tag, or commit
+  destination:
+    server: 'https://kubernetes.default.svc' # Destination cluster
+    namespace: 'default' # Destination namespace
+  syncPolicy:
+    automated: # Enable automatic syncing
+      prune: true # Prune resources not in Git
+      selfHeal: true # Perform automated self-healing
+    syncOptions:
+      - CreateNamespace=true # Create the namespace if it doesn't exist
+  ignoreDifferences: # Ignore differences in specific fields
+    - group: apps
+      kind: Deployment
+      jsonPointers:
+        - /spec/replicas
