@@ -1,3 +1,13 @@
+properties([
+  parameters([
+    choice(
+      name: 'DELETE_RESOURCES',
+      choices: ['Yes', 'No'],
+      description: 'Delete AKS Cluster and other resources after build?'
+    )
+  ])
+])
+
 pipeline {
     agent any
 
@@ -9,7 +19,7 @@ pipeline {
         // Clone the Terraform code and other configurations
         stage('Clone repository') {
             steps {
-                git branch: 'main', url: 'https://github.com/gfakx/argocd-amazon-manifest.git'
+                git branch: 'main', url: 'https://github.com/gfakx/fully-automated-cicd-argocd-aks.git'
             }
         }
 
@@ -101,6 +111,19 @@ pipeline {
         }
     }
 }
+
+stage('Cleanup Resources') {
+          when {
+            expression { params.DELETE_RESOURCES == 'Yes' }
+          }
+          steps {
+            script {
+              sh "terraform destroy -auto-approve"
+              echo "Resources deleted successfully."
+            }
+          }
+        }
+    }
 
 
     post {
