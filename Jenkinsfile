@@ -1,5 +1,6 @@
 properties([
   parameters([
+   string(name: 'APP_NAME', defaultValue: 'amazon-app', description: 'Application Name for Argo CD'),
     choice(
       name: 'DELETE_RESOURCES',
       choices: ['Yes', 'No'],
@@ -62,7 +63,7 @@ pipeline {
     }
 }
 
-// Get Argo CD Server URL
+    // Get Argo CD Server URL
         stage('Get Argo CD Server URL') {
             steps {
                 script {
@@ -99,20 +100,21 @@ pipeline {
         stage('Deploy with Argo CD') {
     steps {
         script {
+             sh "sed -i 's/name: amazon-app/name: ${params.APP_NAME}/g' argocd-app.yml" // Update app name
             withCredentials([string(credentialsId: 'argocd-admin-password', variable: 'ARGOCD_PASSWORD')]) {
             // Login to Argo CD
-            sh "argocd login <argocd-server> --username admin --password NEW_PASSWORD"
+            sh "argocd login ${env.ARGOCD_SERVER_URL} --username admin --password NEW_PASSWORD" // Replace with actual server URL
 
             // Apply the Argo CD Application manifest
             sh "argocd app create -f argocd-app.yml"
 
             // Optional: Sync the application if needed
-            sh "argocd app sync <app-name>"
+            sh "argocd app sync ${params.APP_NAME}"
+        }
         }
     }
-}
 
-stage('Cleanup Resources') {
+    stage('Cleanup Resources') {
           when {
             expression { params.DELETE_RESOURCES == 'Yes' }
           }
@@ -133,3 +135,5 @@ stage('Cleanup Resources') {
         }
     }
 }
+
+
