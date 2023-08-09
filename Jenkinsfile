@@ -30,7 +30,7 @@ pipeline {
                 script {
                     sh "terraform init"
                     sh "terraform validate"
-                    sh "terraform Plan"
+                    sh "terraform plan"
                     sh "terraform apply -auto-approve"
                 }
             }
